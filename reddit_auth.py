@@ -2,7 +2,7 @@ import requests
 import configparser
 
 config = configparser.ConfigParser()
-config.read('reddit_api/config.ini')
+config.read('subreddit-activity/config.ini')
 login = config['LOGIN']
 keys = config['API_KEYS']
 client_id = keys['client_id']
