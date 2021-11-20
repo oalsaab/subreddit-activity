@@ -2,24 +2,20 @@ import requests
 import configparser
 
 config = configparser.ConfigParser()
-config.read('subreddit-activity/config.ini')
+config.read('config.ini')
 login = config['LOGIN']
 keys = config['API_KEYS']
-client_id = keys['client_id']
-client_secret = keys['client_secret']
-username = login['username']
-password = login['password']
 
 
 def auth():
     #OAuth2 authentication - authenticate with <CLIENT_ID> and <CLIENT_SECRET>
-    client_auth = requests.auth.HTTPBasicAuth(client_id, client_secret)
+    client_auth = requests.auth.HTTPBasicAuth(keys['client_id'], keys['client_secret'])
 
     #Post data to the API to retrieve a access token (grant_type is default to 'password' for script use)
     post_data = {
         'grant_type': 'password',
-        'username': username,
-        'password': password
+        'username': login['username'],
+        'password': login['password']
     }
 
     headers = {'User-Agent': "sub_script'/0.0.1"}
