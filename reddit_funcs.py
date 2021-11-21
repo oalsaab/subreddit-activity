@@ -18,7 +18,7 @@ def request_subreddit(subreddit):
     res_json = res.json()
     items = res_json['data']['children']
     if not items:
-        raise RuntimeError(f'{subreddit} does not exist')
+        raise RuntimeError(f'The subreddit "{subreddit}" does not exist')
     else:
         return items
 
