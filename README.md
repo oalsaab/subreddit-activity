@@ -8,7 +8,7 @@ Obtain your reddit access token: https://www.reddit.com/prefs/apps
 
 ## Example
 
-For example, in the last 60 minutes how many posts and comments were there in the subreddits 'news', 'AskReddit', 'funny' and 'soccer'?
+For example, in the last 60 minutes how many posts and comments were there in the subreddits: 'news', 'AskReddit', 'funny' and 'soccer'?
 
 ![subreddit-act](https://user-images.githubusercontent.com/94754943/146647629-ecba18f7-43e6-45b8-957e-6dbb44fdbd71.png)
 
