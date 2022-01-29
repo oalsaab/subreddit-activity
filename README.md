@@ -1,2 +1,1 @@
 # subreddit-activity
-## mytitle
