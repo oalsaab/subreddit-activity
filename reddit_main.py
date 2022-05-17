@@ -1,39 +1,59 @@
-from reddit_funcs import request_subreddit, time_created, request_subreddit_info
+import asyncio
+import aiohttp
 from tabulate import tabulate
 
+from reddit_auth import authenticate
+from reddit_funcs import fetch
 
-# Function that keeps requesting integer as value
-def input_minutes(request_minutes):
+def input_minutes(minutes):
+    """Requests timeframe from user, must be integer value"""
+    
     while True:
         try:
-            minutes_input = float(input(request_minutes))
+            request = float(input(minutes))
         except ValueError:
             print('Please enter a number')
             continue
         else:
-            return minutes_input
             break
-
-
-subreddits = [subreddit for subreddit in input('Enter subreddit(s): ').split()]
-minutes_input = input_minutes('Enter in minutes timeframe: ')
-
-main_list = []
-# Loops over all the subreddits provided by user and performs the functions on each subreddit
-for subreddit in subreddits:
-    request_subreddit(subreddit)
     
-    subscribers, accounts_active = request_subreddit_info(subreddit)
+    return request
+
+def input_subreddits(subreddits):
+    """Requests subreddit from user, must be less than 20 subreddits"""
+
+    while True:
+        try:
+            request = input(subreddits).split()
+            if len(request) > 20:
+                raise ValueError
+        except ValueError:
+            print('Please enter less than 20 subreddits')
+            continue
+        else:
+            break
     
-    posts, comments = time_created(subreddit, minutes_input)
+    return request
+
+async def main(headers):
+    """Create one ClientSession and submit all subreddits to fetch data from, prints data in tabulated format"""
+
+    subreddits = [subreddit for subreddit in input_subreddits('Enter subreddit(s): ')]
+    minutes = input_minutes('Enter timeframe in minutes: ')
+
+    async with aiohttp.ClientSession(headers=headers) as session:
+        data = await fetch(session, subreddits, minutes)
     
-    response_list = [subreddit, subscribers, accounts_active, posts, comments]
-    
-    main_list.append(response_list)
+    columns = ['subreddit', 'subscribers', 'accounts active', 'posts', 'comments']
+    table = []
+    for i in data:
+        subreddit, infos, activities = i
+        subscribers, accounts = infos
+        posts, comments = activities
+        table.append([subreddit, subscribers, accounts, posts, comments])
 
-columns = ['subreddit', 'subscribers', 'accounts_active', 'posts', 'comments']
+    print(tabulate(table, headers=columns))
 
-print(tabulate(main_list, headers=columns))
-
-
-
+if __name__ == '__main__':
+    headers = asyncio.get_event_loop().run_until_complete(authenticate())
+    asyncio.get_event_loop().run_until_complete(main(headers))

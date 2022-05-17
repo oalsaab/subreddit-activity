@@ -1,57 +1,60 @@
-import requests
+import asyncio
 import datetime
-from reddit_auth import auth
 
-auth()
+async def info(session, subreddit):
+    """Retrieves number of subscribers and active accounts for a given subreddit"""
 
-# Function to retrieve number of subscribers and accounts active for a given subreddit
-def request_subreddit_info(subreddit):
-    res = requests.get(f'https://oauth.reddit.com/r/{subreddit}/about', headers=auth.headers)
-    res.raise_for_status()
-    res_json = res.json()
-    items_subscribers = res_json['data']['subscribers']
-    items_accounts_active = res_json['data']['accounts_active']
+    async with session.get(f'https://oauth.reddit.com/r/{subreddit}/about') as response:
+        response.raise_for_status()
+        body = await response.json()
+    try:
+        subscribers = body['data']['subscribers']
+        accounts = body['data']['accounts_active']
+    except KeyError:
+        return 'n/a', 'n/a'
     
-    return items_subscribers, items_accounts_active
+    return subscribers, accounts
 
-# Function to retrieve json data of given subreddit  
-def request_subreddit(subreddit):
-    res = requests.get(f'https://oauth.reddit.com/r/{subreddit}/new', headers=auth.headers)
-    res.raise_for_status()
-    res_json = res.json()
-    items = res_json['data']['children']
+async def activity(session, subreddit, minutes):
+    """Retrieves json data for a given subreddit and returns number of posts and comments for given timeframe"""
+
+    async with session.get(f'https://oauth.reddit.com/r/{subreddit}/new') as response:
+        body = await response.json()
     
+    items = body['data']['children']
     if not items:
-        raise RuntimeError(f'The subreddit "{subreddit}" does not exist')
+        return 'n/a', 'n/a'
     else:
-        return items
+        data = items
 
-# Function that returns the number of posts and comments for a given time specfied from user
-def time_created(subreddit, minutes_param):
-    list_times = []
-    list_comments = []
-    # Loops over all the posts in 'new' and selects the creation date value
-    for i in request_subreddit(subreddit):
-        time = i['data']['created_utc']
-        comments = i['data']['num_comments']
-        
-        time_converted = datetime.datetime.fromtimestamp(time)
-        time_input = datetime.datetime.now() - datetime.timedelta(minutes = minutes_param)
-        
-        if time_input < time_converted:
-            list_times.append(time_converted)
-            list_comments.append(comments)
+    posts = []
+    comments = []
+    for i in data:
+        post = i['data']['created_utc']
+        comment = i['data']['num_comments']
+
+        converted = datetime.datetime.fromtimestamp(post)
+        difference = datetime.datetime.now() - datetime.timedelta(minutes=minutes)
+
+        if difference < converted:
+            posts.append(converted)
+            comments.append(comment)
+
+    return len(posts), sum(comments)
+
+async def fetch(session, subreddits, minutes):
+    """Submit coroutines for execution and gather awaitables, returns zipped subreddit data"""
+
+    infos = []
+    activities = []
+    for subreddit in subreddits:
+        i = asyncio.create_task(info(session, subreddit))
+        a = asyncio.create_task(activity(session, subreddit, minutes))
+        infos.append(i)
+        activities.append(a)
     
-    return len(list_times), sum(list_comments)
+    info_task = await asyncio.gather(*infos)
+    activity_task = await asyncio.gather(*activities)
+    data = list(zip(subreddits, info_task, activity_task))
 
-
-
-
-
-
-
-
-
-
-
-
+    return data
